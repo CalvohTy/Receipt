@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Receipt</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: brown;
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            color: rgb(247, 244, 243);
+        }
+
+        .category-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .category {
+            background-color:rgb(181, 72, 39);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .category:hover {
+            background-color: rgb(255, 98, 0);
+        }
+
+        /* display for rows and column */
+        .menu-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .menu-item {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 150px;
+            height: 120px;
+            background-color:rgb(181, 72, 39);
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.3s ease;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .menu-item:hover {
+            background-color:rgb(255, 98, 0);
+        }
+
+        .menu-item span {
+            word-wrap: break-word;
+            text-align: center;
+        }
+
+        .selected-items {
+            margin-top: 20px;
+        }
+
+        .receipt-section {
+            margin-top: 30px;
+        }
+
+        .receipt-section h3 {
+            text-align: center;
+        }
+
+        button {
+            display: block;
+            width: 50%;
+            margin: 20px auto;
+            font-size: 18px;
+            padding: 10px;
+            background-color: rgb(160, 91, 48);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color:rgb(255, 98, 0);
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                width: 100%;
+                margin: 0;
+            }
+
+            .category-container, .menu-container {
+                display: none;
+            }
+
+            .receipt {
+                width: 80%;
+                margin: 0;
+                padding: 7px;
+                font-size: 5pt;
+            }
+
+            .receipt h1, .receipt h2 {
+                text-align: center;
+                font-size: 12pt;
+            }
+
+            .receipt .item-list {
+                margin-top: 7px;
+            }
+
+            .receipt .item-entry {
+                margin-bottom: 7px;
+            }
+
+            .receipt .total {
+                text-align: right;
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>LUCHEZ EATERY</h1>
+    
+    <div class="category-container">
+        <div class="category" id="Main">Main Dishes</div>
+        <div class="category" id="Tumbukiza">Tumbukiza Meals</div>
+        <div class="category" id="Accompaniments">Accompaniments</div>
+        <div class="category" id="Beverages">Beverages</div>
+    </div>
+
+    <div class="menu-container" id="menu-items"></div>
+
+    <div class="selected-items" id="selected-items">
+        <h3>Selected Items</h3>
+    </div>
+
+    <div class="receipt-section">
+        <h3>Order Confirmation</h3>
+        <form id="receipt-form" action="/generate_receipt" method="POST">
+            <label for="client_name">Client Name:</label>
+            <input type="text" id="client_name" name="client_name" required><br>
+
+            <label for="staff_name">Staff Name:</label>
+            <input type="text" id="staff_name" name="staff_name" required><br>
+
+            <div id="items-container"></div>
+
+            <button type="submit">Generate Receipt</button>
+        </form>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            var selectedItems = {};
+            var menuData = {
+                "Main": [
+                    { name: "Antitheft 1kg", rate: 1400.00 },
+                    { name: "Antitheft 1/2kg", rate: 700.00 },
+                    { name: "Fish Choma", rate: 800.00 },
+                    { name: "Ossubukko", rate: 400.00 },
+                    { name: "Beef WetFry", rate: 1200.00 },
+                    { name: "Beef WetFry", rate: 600.00 },
+                    { name: "Beef DryFry", rate: 1200.00 },
+                    { name: "Beef DryFry", rate: 600.00 },
+                    { name: "Chicken WetFry", rate: 1800.00 },
+                    { name: "Chicken WetFry", rate: 900.00 },
+                    { name: "Chicken DryFry", rate: 1800.00 },
+                    { name: "Chicken DryFry", rate: 900.00 },
+                    { name: "Chicken Choma", rate: 1800.00 },
+                    { name: "Chicken Choma", rate: 900.00 },
+                    { name: "Goat WetFry", rate: 1500.00 },
+                    { name: "Goat WetFry", rate: 700.00 },
+                    { name: "Goat DryFry", rate: 1500.00 },
+                    { name: "Goat DryFry", rate: 700.00 },
+                    { name: "Goat Choma", rate: 1500.00 },
+                    { name: "Goat Choma", rate: 700.00 }
+                ],
+                "Tumbukiza": [
+                    { name: "Beef 1kg", rate: 1500.00 },
+                    { name: "Beef 1/2kg", rate: 800.00 },
+                    { name: "Mbuzi 1kg", rate: 1500.00 },
+                    { name: "Mbuzi 1/2kg", rate: 800.00 },
+                    { name: "Chicken Kienyeji whole", rate: 1500.00 },
+                    { name: "Chicken Kienyeji Half", rate: 800.00 }
+                ],
+                "Accompaniments": [
+                    { name: "Chips Plain", rate: 200.00 },
+                    { name: "Chips Masala", rate: 150.00 },
+                    { name: "Saute Potatoes", rate: 300.00 },
+                    { name: "Roast Potatoes", rate: 100.00 },
+                    { name: "Potatoes Wedges", rate: 50.00 },
+                    { name: "Rice", rate: 200.00 },
+                    { name: "Plantain", rate: 300.00 },
+                    { name: "Chapati", rate: 100.00 },
+                    { name: "Ugali White", rate: 50.00 },
+                    { name: "Ugali Brown", rate: 300.00 },
+                    { name: "Kambumbari", rate: 100.00 },
+                    { name: "Managu", rate: 50.00 },
+                    { name: "Kunde", rate: 200.00 }
+                ],
+                "Beverages": [
+                    { name: "Soda", rate: 100.00 },
+                    { name: "Dawa", rate: 250.00 },
+                    { name: "Water - 1ltr", rate: 150.00 },
+                    { name: "Water - 500ml", rate: 100.00 },
+                    { name: "Tea - White", rate: 150.00 },
+                    { name: "Tea - Black", rate: 100.00 },
+                    { name: "Coffee - White", rate: 150.00 },
+                    { name: "Coffee - Black", rate: 100.00 }
+                ]
+            };
+
+            // Handling category click event
+            $(".category").on("click", function () {
+                var categoryId = $(this).attr("id");
+                // Clears any previous menu items displayed
+                $("#menu-items").empty();
+
+                // Items of the selected category
+                menuData[categoryId].forEach(function (item) {
+                    var itemHtml = `
+                        <div class="menu-item" data-item="${item.name}" data-rate="${item.rate}">
+                            <span>${item.name}</span><br><span>Kshs ${item.rate.toFixed(2)}</span>
+                        </div>
+                    `;
+                    $("#menu-items").append(itemHtml);
+                });
+
+                // Menu container
+                $("#menu-items").show();
+            });
+
+            // Item selection
+            $(document).on("click", ".menu-item", function () {
+                var itemName = $(this).data('item');
+                var itemRate = parseFloat($(this).data('rate'));
+
+                if (selectedItems[itemName]) {
+                    selectedItems[itemName].quantity += 1;
+                    $('#items-container').find(`[data-item="${itemName}"] .quantity`).val(selectedItems[itemName].quantity);
+                } else {
+                    selectedItems[itemName] = {
+                        name: itemName,
+                        rate: itemRate,
+                        quantity: 1
+                    };
+
+                    var itemHtml = `
+                        <div class="item-entry" data-item="${itemName}">
+                            <span>${itemName} - Kshs ${itemRate.toFixed(2)}</span>
+                            <input type="number" name="quantities[]" value="1" min="1" class="quantity" disabled>
+                            <input type="hidden" name="items[]" value="${itemName}">
+                            <input type="hidden" name="rates[]" value="${itemRate}">
+                        </div>
+                    `;
+                    $('#items-container').append(itemHtml);
+                }
+
+                updateSelectedItemsDisplay();
+            });
+
+            // Selected items display
+            function updateSelectedItemsDisplay() {
+                $('#selected-items').empty();
+                for (var item in selectedItems) {
+                    $('#selected-items').append(`
+                        <div>${selectedItems[item].name} - Quantity: ${selectedItems[item].quantity} - Kshs ${(selectedItems[item].rate * selectedItems[item].quantity).toFixed(2)}</div>
+                    `);
+                }
+            }
+
+            $('#receipt-form').on('submit', function (event) {
+                event.preventDefault();
+
+                var itemsData = [];
+                var quantitiesData = [];
+                var ratesData = [];
+
+                for (var item in selectedItems) {
+                    itemsData.push(item);
+                    quantitiesData.push(selectedItems[item].quantity);
+                    ratesData.push(selectedItems[item].rate);
+                }
+
+                $('input[name="items[]"]').remove();
+                $('input[name="quantities[]"]').remove();
+                $('input[name="rates[]"]').remove();
+
+                itemsData.forEach((item, index) => {
+                    $('#receipt-form').append(`<input type="hidden" name="items[]" value="${item}">`);
+                    $('#receipt-form').append(`<input type="hidden" name="quantities[]" value="${quantitiesData[index]}">`);
+                    $('#receipt-form').append(`<input type="hidden" name="rates[]" value="${ratesData[index]}">`);
+                });
+
+                this.submit();
+            });
+        });
+    </script>
+</body>
+</html>
